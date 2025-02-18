@@ -4,3 +4,6 @@ node_modules/
 
 # React
 build/
+
+# Ignore Firebase key
+firebaseServiceAccountKey.json
