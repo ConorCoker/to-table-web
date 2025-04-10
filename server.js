@@ -8,7 +8,7 @@ const port = 3000;
 app.use(bodyParser.json());
 app.use(express.json());
 
-app.use('/orders', ordersRoutes);
+app.use('/', ordersRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
