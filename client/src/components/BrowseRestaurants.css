@@ -1,0 +1,34 @@
+.browse-restaurants {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.browse-restaurants h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.browse-restaurants ul {
+    list-style: none;
+    padding: 0;
+}
+
+.browse-restaurants li {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.browse-restaurants a {
+    text-decoration: none;
+    color: #007bff;
+}
+
+.browse-restaurants a:hover {
+    text-decoration: underline;
+}
+
+.browse-restaurants .error {
+    color: red;
+    text-align: center;
+}

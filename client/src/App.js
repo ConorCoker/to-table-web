@@ -5,6 +5,11 @@ import MenuForm from './components/MenuForm';
 import CategoryForm from './components/CategoryForm';
 import Register from './components/Register';
 import Login from './components/Login';
+import BrowseRestaurants from './components/BrowseRestaurants';
+import RestaurantPage from './components/RestaurantPage';
+import EditRestaurant from './components/EditRestaurant';
+import { auth } from './firebase';
+import { signOut } from 'firebase/auth';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -26,26 +31,47 @@ function App() {
 const AppContent = () => {
     const { user } = useContext(AuthContext);
 
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            // Redirect handled by AuthContext (user will be null)
+        } catch (error) {
+            console.error('Error logging out:', error);
+        }
+    };
+
     return (
         <div className="App">
-            <h1>Restaurant Menu Management</h1>
-            <nav>
-                {user ? (
-                    <>
-                        <Link to="/">Add Menu Item</Link> |{' '}
-                        <Link to="/categories">Manage Categories</Link>
-                    </>
-                ) : (
-                    <>
-                        <Link to="/login">Login</Link> | <Link to="/register">Register</Link>
-                    </>
-                )}
+            {/* Top Navigation Bar */}
+            <nav className="top-nav">
+                <div className="nav-left">
+                    <Link to="/">TooTable</Link>
+                </div>
+                <div className="nav-right">
+                    {user ? (
+                        <div className="account-menu">
+                            <span className="account-label">Account</span>
+                            <div className="dropdown">
+                                <Link to="/add-menu">Add Menu Item</Link>
+                                <Link to="/categories">Manage Categories</Link>
+                                <Link to="/edit">Edit Restaurant</Link>
+                                <button onClick={handleLogout}>Logout</button>
+                            </div>
+                        </div>
+                    ) : (
+                        <Link to="/login">Login</Link>
+                    )}
+                </div>
             </nav>
+
+            {/* Main Content */}
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/" element={<BrowseRestaurants />} />
+                <Route path="/restaurants/:restaurantId" element={<RestaurantPage />} />
                 <Route
-                    path="/"
+                    path="/add-menu"
                     element={
                         <ProtectedRoute>
                             <AuthContext.Consumer>
@@ -61,6 +87,14 @@ const AppContent = () => {
                             <AuthContext.Consumer>
                                 {({ restaurantId }) => <CategoryForm restaurantId={restaurantId} />}
                             </AuthContext.Consumer>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/edit"
+                    element={
+                        <ProtectedRoute>
+                            <EditRestaurant />
                         </ProtectedRoute>
                     }
                 />

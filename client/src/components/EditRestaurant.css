@@ -1,0 +1,67 @@
+.edit-restaurant {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.edit-restaurant h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.edit-restaurant form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.edit-restaurant div {
+    display: flex;
+    flex-direction: column;
+}
+
+.edit-restaurant label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.edit-restaurant input,
+.edit-restaurant textarea {
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.edit-restaurant button {
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.edit-restaurant button:hover {
+    background-color: #0056b3;
+}
+
+.edit-restaurant .success {
+    color: green;
+    text-align: center;
+}
+
+.edit-restaurant .error {
+    color: red;
+    text-align: center;
+}
+
+.edit-restaurant .existing-photos {
+    margin-top: 20px;
+}
+
+.edit-restaurant img {
+    max-width: 100px;
+    margin: 10px;
+    border-radius: 8px;
+}
