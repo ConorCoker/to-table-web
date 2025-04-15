@@ -3,20 +3,84 @@
   padding: 20px;
 }
 
-.App h1 {
-  margin-bottom: 20px;
+/* Top Navigation Bar */
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #007bff;
+  padding: 10px 20px;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
-.App nav {
-  margin-bottom: 30px;
-}
-
-.App nav a {
-  margin: 0 10px;
+.nav-left a {
+  color: white;
   text-decoration: none;
-  color: #007bff;
+  font-size: 1.5em;
+  font-weight: bold;
 }
 
-.App nav a:hover {
+.nav-left a:hover {
   text-decoration: underline;
+}
+
+.nav-right {
+  position: relative;
+}
+
+.nav-right a {
+  color: white;
+  text-decoration: none;
+  font-size: 1em;
+}
+
+.nav-right a:hover {
+  text-decoration: underline;
+}
+
+/* Account Dropdown */
+.account-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.account-label {
+  cursor: pointer;
+  padding: 5px 10px;
+  font-size: 1em;
+}
+
+.account-menu:hover .dropdown {
+  display: block;
+}
+
+.dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.dropdown a,
+.dropdown button {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  text-align: left;
+  border: none;
+  background: none;
+  width: 100%;
+  cursor: pointer;
+}
+
+.dropdown a:hover,
+.dropdown button:hover {
+  background-color: #ddd;
 }
