@@ -1,21 +1,6 @@
 const express = require('express');
-const firebaseAdmin = require('firebase-admin');
 const router = express.Router();
-require('dotenv').config();
-
-if (!firebaseAdmin.apps.length) {
-  const serviceAccount = {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  };
-
-  firebaseAdmin.initializeApp({
-    credential: firebaseAdmin.credential.cert(serviceAccount),
-  });
-}
-
-const db = firebaseAdmin.firestore();
+const { db, firebaseAdmin } = require('../config/firebase');
 
 // 📌 POST /:restaurantId/orders - Add a new order for a specific restaurant
 router.post('/:restaurantId/orders', async (req, res) => {
