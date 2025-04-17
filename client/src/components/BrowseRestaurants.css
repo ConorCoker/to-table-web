@@ -1,34 +1,129 @@
 .browse-restaurants {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 40px 20px;
+    font-family: 'Arial', sans-serif;
 }
 
 .browse-restaurants h2 {
     text-align: center;
-    margin-bottom: 20px;
-}
-
-.browse-restaurants ul {
-    list-style: none;
-    padding: 0;
-}
-
-.browse-restaurants li {
-    padding: 10px;
-    border-bottom: 1px solid #eee;
-}
-
-.browse-restaurants a {
-    text-decoration: none;
-    color: #007bff;
-}
-
-.browse-restaurants a:hover {
-    text-decoration: underline;
+    margin-bottom: 30px;
+    color: #333;
+    font-size: 2.5rem;
+    font-weight: 700;
 }
 
 .browse-restaurants .error {
-    color: red;
+    color: #e63946;
     text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+}
+
+.filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-group label {
+    font-size: 1.1rem;
+    color: #555;
+    font-weight: 500;
+}
+
+.filter-group select {
+    padding: 10px 15px;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    min-width: 200px;
+    cursor: pointer;
+}
+
+.filter-group select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+}
+
+.filter-group select:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.restaurant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 0;
+}
+
+.restaurant-card {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.restaurant-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.restaurant-card a {
+    display: block;
+    padding: 20px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.restaurant-card h3 {
+    margin: 0 0 10px;
+    font-size: 1.4rem;
+    color: #333;
+    font-weight: 600;
+}
+
+.restaurant-card p {
+    margin: 5px 0;
+    font-size: 1rem;
+    color: #666;
+}
+
+.restaurant-card .location {
+    font-style: italic;
+    color: #888;
+}
+
+@media (max-width: 768px) {
+    .browse-restaurants h2 {
+        font-size: 2rem;
+    }
+
+    .filter-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .filter-group select {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .restaurant-grid {
+        grid-template-columns: 1fr;
+    }
 }

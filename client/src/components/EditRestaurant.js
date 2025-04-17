@@ -3,6 +3,8 @@ import { AuthContext } from '../context/AuthContext';
 import { db, storage } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { countries } from 'countries-list';
+import citiesData from 'cities.json/cities.json';
 import './EditRestaurant.css';
 
 const EditRestaurant = () => {
@@ -16,6 +18,11 @@ const EditRestaurant = () => {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
+    const [countriesList, setCountriesList] = useState([]);
+    const [selectedCountry, setSelectedCountry] = useState('');
+    const [locations, setLocations] = useState([]);
+    const [selectedLocation, setSelectedLocation] = useState('');
+
     useEffect(() => {
         const fetchRestaurantDetails = async () => {
             if (!restaurantId) return;
@@ -26,15 +33,66 @@ const EditRestaurant = () => {
                     setName(data.name || '');
                     setAddress(data.address || '');
                     setPhoneNumber(data.phoneNumber || '');
-                    setLocation(data.location || '');
+                    const savedLocation = data.location || '';
+                    setLocation(savedLocation);
                     setExistingPhotos(data.photos || []);
+
+                    if (savedLocation) {
+                        const [city, country] = savedLocation.split(', ').map(part => part.trim());
+                        setSelectedLocation(city || '');
+                        setSelectedCountry(country || '');
+                    }
                 }
             } catch (err) {
-                setError('Error fetching restaurant details');
+                setError('Error fetching restaurant details: ' + err.message);
             }
         };
         fetchRestaurantDetails();
     }, [restaurantId]);
+
+    useEffect(() => {
+        const countryArray = Object.entries(countries).map(([code, country]) => ({
+            name: country.name,
+            code: code.toLowerCase()
+        }));
+        setCountriesList(countryArray.sort((a, b) => a.name.localeCompare(b.name)));
+    }, []);
+
+    useEffect(() => {
+        if (!selectedCountry) {
+            setLocations([]);
+            setSelectedLocation('');
+            setLocation('');
+            return;
+        }
+
+        const selectedCountryData = countriesList.find(c => c.name === selectedCountry);
+        if (!selectedCountryData) return;
+
+        const countryLocations = citiesData
+            .filter(city => city.country.toLowerCase() === selectedCountryData.code)
+            .map(city => city.name);
+
+        // Remove duplicates, sort, and filter out null values
+        const uniqueLocations = [...new Set(countryLocations.filter(loc => loc))].sort();
+        setLocations(uniqueLocations);
+
+        if (uniqueLocations.length === 0) {
+            setError(`No locations found for ${selectedCountry}.`);
+        } else {
+            console.log(`Fetched ${uniqueLocations.length} locations for ${selectedCountry}:`, uniqueLocations);
+        }
+    }, [selectedCountry, countriesList]);
+
+    useEffect(() => {
+        if (selectedLocation && selectedCountry) {
+            setLocation(`${selectedLocation}, ${selectedCountry}`);
+        } else if (selectedCountry) {
+            setLocation(selectedCountry);
+        } else {
+            setLocation('');
+        }
+    }, [selectedLocation, selectedCountry]);
 
     const handlePhotoUpload = async (files) => {
         const uploadedPhotos = [];
@@ -63,9 +121,9 @@ const EditRestaurant = () => {
             });
 
             setMessage('Restaurant details updated successfully');
-            setPhotos([]); // Clear photo input
+            setPhotos([]);
         } catch (err) {
-            setError('Error updating restaurant details');
+            setError('Error updating restaurant details: ' + err.message);
         }
     };
 
@@ -100,13 +158,39 @@ const EditRestaurant = () => {
                     />
                 </div>
                 <div>
-                    <label>Location (e.g., Dublin):</label>
-                    <input
-                        type="text"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                    />
+                    <label>Country:</label>
+                    <select
+                        value={selectedCountry}
+                        onChange={(e) => {
+                            setSelectedCountry(e.target.value);
+                            setSelectedLocation('');
+                        }}
+                    >
+                        <option value="">Select a country</option>
+                        {countriesList.map((country, index) => (
+                            <option key={index} value={country.name}>
+                                {country.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
+                {selectedCountry && (
+                    <div>
+                        <label>Location (City/Region):</label>
+                        <select
+                            value={selectedLocation}
+                            onChange={(e) => setSelectedLocation(e.target.value)}
+                            disabled={!locations.length}
+                        >
+                            <option value="">Select a location</option>
+                            {locations.map((loc, index) => (
+                                <option key={index} value={loc}>
+                                    {loc}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
                 <div>
                     <label>Upload Photos:</label>
                     <input
