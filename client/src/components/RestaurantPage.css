@@ -79,19 +79,23 @@
 
 .restaurant-content {
     display: flex;
+    flex-wrap: wrap;
     gap: 30px;
 }
 
 .menu-section,
+.cart-section,
 .photos-section {
     flex: 1;
     background: #fff;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    min-width: 300px;
 }
 
 .menu-section h2,
+.cart-section h2,
 .photos-section h2 {
     font-size: 1.8rem;
     margin-bottom: 15px;
@@ -145,6 +149,132 @@
     margin: 5px 0 0;
     color: #666;
     font-size: 0.9rem;
+}
+
+.cart-items {
+    display: grid;
+    gap: 10px;
+}
+
+.cart-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.cart-item-name {
+    flex: 2;
+    font-weight: bold;
+}
+
+.cart-item-price {
+    flex: 1;
+    color: #007bff;
+}
+
+.cart-item-quantity {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.cart-item-quantity button {
+    padding: 5px 10px;
+    border: 1px solid #007bff;
+    background: #fff;
+    color: #007bff;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.cart-item-quantity button:disabled {
+    border-color: #ccc;
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+.cart-item-total {
+    flex: 1;
+    font-weight: bold;
+}
+
+.cart-item-special-requests {
+    flex: 1 1 100%;
+    padding: 5px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    resize: vertical;
+    font-size: 0.9rem;
+}
+
+.cart-item-remove {
+    padding: 5px 10px;
+    border: none;
+    background: #ff4d4d;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.cart-item-remove:hover {
+    background: #cc0000;
+}
+
+.cart-total {
+    margin-top: 15px;
+    font-size: 1.2rem;
+    text-align: right;
+}
+
+.place-order-button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    border: none;
+    background: #007bff;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+    width: 100%;
+    font-size: 1.1rem;
+}
+
+.place-order-button:hover {
+    background: #0056b3;
+}
+
+.view-orders-button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    border: 1px solid #007bff;
+    background: #fff;
+    color: #007bff;
+    cursor: pointer;
+    border-radius: 4px;
+    width: 100%;
+    font-size: 1.1rem;
+}
+
+.view-orders-button:hover {
+    background: #f0f8ff;
+}
+
+.past-orders {
+    margin-top: 20px;
+}
+
+.past-order {
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.past-order p {
+    margin: 5px 0;
 }
 
 .photo-gallery {
@@ -212,7 +342,19 @@
         flex-direction: column;
     }
 
-    .menu-item {
+    .menu-item,
+    .cart-item,
+    .past-order {
         padding: 10px;
+    }
+
+    .cart-item-name,
+    .cart-item-price,
+    .cart-item-quantity,
+    .cart-item-total,
+    .cart-item-special-requests,
+    .cart-item-remove {
+        flex: 1 1 100%;
+        margin-bottom: 5px;
     }
 }
