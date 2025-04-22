@@ -1,4 +1,4 @@
-.menu-form {
+.role-form {
     max-width: 600px;
     margin: 20px auto;
     padding: 20px;
@@ -6,51 +6,44 @@
     border-radius: 8px;
 }
 
-.menu-form h2 {
+.role-form h2 {
     text-align: center;
 }
 
-.menu-form .add-role-link {
+.role-form .back-button {
     display: inline-block;
     margin-bottom: 20px;
     text-decoration: none;
     color: #007bff;
 }
 
-.menu-form .add-role-link:hover {
+.role-form .back-button:hover {
     text-decoration: underline;
 }
 
-.menu-form form {
+.role-form form {
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 
-.menu-form div {
+.role-form div {
     display: flex;
     flex-direction: column;
 }
 
-.menu-form label {
+.role-form label {
     margin-bottom: 5px;
     font-weight: bold;
 }
 
-.menu-form input,
-.menu-form textarea,
-.menu-form select {
+.role-form input {
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
 
-.menu-form textarea {
-    resize: vertical;
-    min-height: 100px;
-}
-
-.menu-form button {
+.role-form button {
     padding: 10px;
     background-color: #28a745;
     color: white;
@@ -59,11 +52,26 @@
     cursor: pointer;
 }
 
-.menu-form button:hover {
+.role-form button:hover {
     background-color: #218838;
 }
 
-.menu-form p {
+.role-form p {
     text-align: center;
     color: #dc3545;
+}
+
+.existing-roles {
+    margin-top: 20px;
+}
+.existing-roles h3 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+.existing-roles ul {
+    list-style: none;
+    padding: 0;
+}
+.existing-roles li {
+    padding: 5px 0;
 }
