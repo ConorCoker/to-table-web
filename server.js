@@ -5,6 +5,7 @@ const ordersRouter = require('./routes/orders');
 const menuRouter = require('./routes/menu');
 const categoriesRouter = require('./routes/categories');
 const restaurantsRouter = require('./routes/restaurants');
+const rolesRouter = require('./routes/roles');
 const app = express();
 
 app.use(cors({
@@ -24,6 +25,7 @@ app.use('/api', ordersRouter);
 app.use('/api', menuRouter);
 app.use('/api', categoriesRouter);
 app.use('/api', restaurantsRouter);
+app.use('/api', rolesRouter);
 
 app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));

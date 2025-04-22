@@ -11,6 +11,7 @@ import EditRestaurant from './components/EditRestaurant';
 import { auth } from './firebase';
 import { signOut } from 'firebase/auth';
 import './App.css';
+import RoleForm from './components/RoleForm';
 
 const ProtectedRoute = ({ children }) => {
     const { user, loading } = useContext(AuthContext);
@@ -54,6 +55,7 @@ const AppContent = () => {
                             <div className="dropdown">
                                 <Link to="/add-menu">Add Menu Item</Link>
                                 <Link to="/categories">Manage Categories</Link>
+                                <Link to="/roles">Manage Roles</Link>
                                 <Link to="/edit">Edit Restaurant</Link>
                                 <button onClick={handleLogout}>Logout</button>
                             </div>
@@ -86,6 +88,16 @@ const AppContent = () => {
                         <ProtectedRoute>
                             <AuthContext.Consumer>
                                 {({ restaurantId }) => <CategoryForm restaurantId={restaurantId} />}
+                            </AuthContext.Consumer>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/roles"
+                    element={
+                        <ProtectedRoute>
+                            <AuthContext.Consumer>
+                                {({ restaurantId }) => <RoleForm restaurantId={restaurantId} />}
                             </AuthContext.Consumer>
                         </ProtectedRoute>
                     }
