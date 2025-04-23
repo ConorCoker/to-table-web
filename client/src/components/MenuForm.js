@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getFirestore, collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import './MenuForm.css';
 
@@ -18,7 +18,6 @@ const MenuForm = ({ restaurantId }) => {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                setLoading(true);
                 const categoriesRef = collection(db, `restaurants/${restaurantId}/categories`);
                 const snapshot = await getDocs(categoriesRef);
                 const categoriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -41,9 +40,17 @@ const MenuForm = ({ restaurantId }) => {
             }
         };
 
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                await Promise.all([fetchCategories(), fetchRoles()]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (restaurantId) {
-            fetchCategories();
-            fetchRoles();
+            fetchData().then(_ => {});
         }
     }, [restaurantId]);
 
