@@ -10,6 +10,7 @@ const app = express();
 
 const allowedOrigins = ['http://localhost:3001', 'https://d1ti6emat1jvt2.cloudfront.net', 'https://master.dwj4nb9if0xc0.amplifyapp.com'];
 
+
 app.use(cors({
     origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
