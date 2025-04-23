@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import './RestaurantPage.css';
+import {getFunctions} from "firebase/functions";
+import { httpsCallable } from "firebase/functions";
 
 const defaultRestaurantPfp = 'https://firebasestorage.googleapis.com/v0/b/tootable-6beb7.firebasestorage.app/o/assets%2Fdefault_rest_image.png?alt=media&token=ff81d826-4dbe-4f5b-8c22-b036acb66093';
 
@@ -101,7 +103,7 @@ const RestaurantPage = () => {
         fetchRestaurantAndCategories();
     }, [restaurantId]);
 
-    const handleAddToOrder = (item) => {
+    const handleAddToOrder = async (item) => {
         setCart(prevCart => {
             const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
             if (existingItem) {
@@ -156,7 +158,8 @@ const RestaurantPage = () => {
                     itemName: item.name,
                     price: item.price,
                     quantity: item.quantity,
-                    specialRequests: item.specialRequests || ''
+                    specialRequests: item.specialRequests || '',
+                    roleId: item.role
                 })),
                 total: getCartTotal(),
                 status: 'pending',
@@ -176,6 +179,36 @@ const RestaurantPage = () => {
                 ...doc.data(),
             }));
             setPastOrders(ordersData);
+
+            const rolesMap = {};
+
+            cart.forEach(item => {
+                if (!item.role) return;
+                if (!rolesMap[item.role]) rolesMap[item.role] = [];
+                rolesMap[item.role].push(item);
+            });
+
+            const functions = getFunctions();
+            const sendOrderNotification = httpsCallable(functions, 'sendOrderNotification');
+
+            for (const [roleId, itemsForRole] of Object.entries(rolesMap)) {
+                const itemsSummary = itemsForRole.map(item => `${item.quantity}x ${item.name}`).join(', ');
+                const cartItemsCount = itemsForRole.reduce((total, item) => total + item.quantity, 0);
+                const cartTotal = itemsForRole.reduce((total, item) => total + item.quantity * item.price, 0);
+
+                try {
+                    await sendOrderNotification({
+                        restaurantId,
+                        roleId,
+                        itemName: itemsSummary,
+                        cartItemsCount,
+                        cartTotal,
+                    });
+                    console.log(`Successfully sent order notification to Android for role: ${roleId}`);
+                } catch (error) {
+                    console.error(`Error sending notification for role ${roleId}:`, error);
+                }
+            }
 
             setCart([]);
             alert(`Order placed successfully! Order ID: ${docRef.id}`);
