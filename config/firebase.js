@@ -1,5 +1,5 @@
 const firebaseAdmin = require('firebase-admin');
-require('dotenv').config();
+// require('dotenv').config();
 
 if (!firebaseAdmin.apps.length) {
     console.log('Project ID:', process.env.FIREBASE_PROJECT_ID);
