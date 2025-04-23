@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import { getFirestore, collection, getDocs, addDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import './MenuForm.css';
 
 const MenuForm = ({ restaurantId }) => {
@@ -12,33 +13,38 @@ const MenuForm = ({ restaurantId }) => {
     const [categories, setCategories] = useState([]);
     const [roles, setRoles] = useState([]);
     const [message, setMessage] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const apiUrl = process.env.REACT_APP_API_URL;
-
-    // Fetch categories on mount
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await axios.get(`${apiUrl}/api/${restaurantId}/categories`);
-                setCategories(response.data || []);
+                setLoading(true);
+                const categoriesRef = collection(db, `restaurants/${restaurantId}/categories`);
+                const snapshot = await getDocs(categoriesRef);
+                const categoriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setCategories(categoriesData || []);
             } catch (error) {
-                setMessage('Error fetching categories: ' + (error.response?.data?.message || error.message));
+                setMessage('Error fetching categories: ' + error.message);
                 console.error('Fetch categories error:', error);
             }
         };
 
         const fetchRoles = async () => {
             try {
-                const response = await axios.get(`${apiUrl}/api/${restaurantId}/roles`);
-                setRoles(response.data || []);
+                const rolesRef = collection(db, `restaurants/${restaurantId}/roles`);
+                const snapshot = await getDocs(rolesRef);
+                const rolesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setRoles(rolesData || []);
             } catch (error) {
-                setMessage('Error fetching roles: ' + (error.response?.data?.message || error.message));
+                setMessage('Error fetching roles: ' + error.message);
                 console.error('Fetch roles error:', error);
             }
         };
 
-        fetchCategories();
-        fetchRoles();
+        if (restaurantId) {
+            fetchCategories();
+            fetchRoles();
+        }
     }, [restaurantId]);
 
     const handleSubmit = async (e) => {
@@ -47,24 +53,42 @@ const MenuForm = ({ restaurantId }) => {
             setMessage('Please select a role');
             return;
         }
+        if (!category) {
+            setMessage('Please select a category');
+            return;
+        }
+        if (!itemName.trim()) {
+            setMessage('Item name is required');
+            return;
+        }
+        if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
+            setMessage('Valid price is required');
+            return;
+        }
 
         try {
-            const response = await axios.post(`${apiUrl}/api/${restaurantId}/menu`, {
+            setLoading(true);
+            const menuRef = collection(db, `restaurants/${restaurantId}/menu`);
+            const newItem = {
                 name: itemName,
-                description,
+                description: description || '',
                 price: parseFloat(price),
                 category,
                 role,
-            });
-            setMessage(response.data.message);
+                timestamp: new Date(),
+            };
+            await addDoc(menuRef, newItem);
+            setMessage('Menu item added successfully!');
             setItemName('');
             setDescription('');
             setPrice('');
             setCategory('');
             setRole('');
         } catch (error) {
-            setMessage(error.response?.data?.message || 'Error adding menu item');
+            setMessage('Error adding menu item: ' + error.message);
             console.error('Submit error:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -89,6 +113,7 @@ const MenuForm = ({ restaurantId }) => {
                         value={itemName}
                         onChange={(e) => setItemName(e.target.value)}
                         required
+                        disabled={loading}
                     />
                 </div>
                 <div>
@@ -96,6 +121,7 @@ const MenuForm = ({ restaurantId }) => {
                     <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
+                        disabled={loading}
                     />
                 </div>
                 <div>
@@ -106,6 +132,7 @@ const MenuForm = ({ restaurantId }) => {
                         value={price}
                         onChange={(e) => setPrice(e.target.value)}
                         required
+                        disabled={loading}
                     />
                 </div>
                 <div>
@@ -114,6 +141,7 @@ const MenuForm = ({ restaurantId }) => {
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
                         required
+                        disabled={loading || categories.length === 0}
                     >
                         <option value="">Select a category</option>
                         {categories.map((cat) => (
@@ -129,6 +157,7 @@ const MenuForm = ({ restaurantId }) => {
                         value={role}
                         onChange={(e) => setRole(e.target.value)}
                         required
+                        disabled={loading || roles.length === 0}
                     >
                         <option value="">Select a role</option>
                         {roles.map((r) => (
@@ -138,8 +167,11 @@ const MenuForm = ({ restaurantId }) => {
                         ))}
                     </select>
                 </div>
-                <button type="submit" disabled={roles.length === 0 || categories.length === 0}>
-                    Add Item
+                <button
+                    type="submit"
+                    disabled={loading || roles.length === 0 || categories.length === 0}
+                >
+                    {loading ? 'Adding...' : 'Add Item'}
                 </button>
             </form>
             {message && <p>{message}</p>}

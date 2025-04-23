@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import './RestaurantPage.css';
 
 const defaultRestaurantPfp = 'https://firebasestorage.googleapis.com/v0/b/tootable-6beb7.firebasestorage.app/o/assets%2Fdefault_rest_image.png?alt=media&token=ff81d826-4dbe-4f5b-8c22-b036acb66093';
-const apiUrl = process.env.REACT_APP_API_URL;
+
 const RestaurantPage = () => {
     const { restaurantId } = useParams();
     const [restaurant, setRestaurant] = useState(null);
@@ -78,25 +78,22 @@ const RestaurantPage = () => {
                     );
                     setCategories(filteredCategories);
                     try {
-                        const response = await fetch(`${apiUrl}/api/${restaurantId}/orders`);
-                        if (response.ok) {
-                            const orders = await response.json();
-                            setPastOrders(orders);
-                        } else if (response.status === 404) {
-                            setPastOrders([]);
-                        } else {
-                            console.warn(`Failed to fetch past orders: ${response.status} ${response.statusText}`);
-                            setPastOrders([]);
-                        }
-                    } catch (fetchError) {
-                        console.warn('Error fetching past orders:', fetchError);
+                        const ordersRef = collection(db, `restaurants/${restaurantId}/orders`);
+                        const ordersSnap = await getDocs(ordersRef);
+                        const ordersData = ordersSnap.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data(),
+                        }));
+                        setPastOrders(ordersData);
+                    } catch (orderError) {
+                        console.warn('Error fetching past orders:', orderError);
                         setPastOrders([]);
                     }
                 } else {
-                    setError('Restaurant somehow was not found even though was clicked on homescreen');
+                    setError('Restaurant not found');
                 }
             } catch (err) {
-                setError('Failed to load restaurant details');
+                setError('Failed to load restaurant details: ' + err.message);
             } finally {
                 setLoading(false);
             }
@@ -153,51 +150,35 @@ const RestaurantPage = () => {
         }
 
         try {
-            const orderId = `ORDER_${restaurantId}_${Date.now()}`;
             const order = {
-                orderId,
+                orderId: `ORDER_${restaurantId}_${Date.now()}`,
                 items: cart.map(item => ({
                     itemName: item.name,
                     price: item.price,
                     quantity: item.quantity,
                     specialRequests: item.specialRequests || ''
                 })),
-                total: getCartTotal()
+                total: getCartTotal(),
+                status: 'pending',
+                timestamp: new Date(),
             };
 
-            const response = await fetch(`${apiUrl}/api/${restaurantId}/orders`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(order)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Failed to place order: ${response.status} ${response.statusText} - ${errorData.message}`);
-            }
-
-            const result = await response.json();
-            const firestoreOrderId = result.orderId;
+            const ordersRef = collection(db, `restaurants/${restaurantId}/orders`);
+            const docRef = await addDoc(ordersRef, order);
 
             const pastOrderIds = JSON.parse(localStorage.getItem(`orderIds_${restaurantId}`) || '[]');
-            pastOrderIds.push(firestoreOrderId);
+            pastOrderIds.push(docRef.id);
             localStorage.setItem(`orderIds_${restaurantId}`, JSON.stringify(pastOrderIds));
 
+            const ordersSnap = await getDocs(ordersRef);
+            const ordersData = ordersSnap.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            setPastOrders(ordersData);
+
             setCart([]);
-            try {
-                const ordersResponse = await fetch(`${apiUrl}/api/${restaurantId}/orders`);
-                if (ordersResponse.ok) {
-                    const orders = await ordersResponse.json();
-                    setPastOrders(orders);
-                } else {
-                    setPastOrders([]);
-                    console.warn(`Failed to refresh past orders: ${ordersResponse.status}`);
-                }
-            } catch (fetchError) {
-                console.warn('Error refreshing past orders:', fetchError);
-                setPastOrders([]);
-            }
-            alert(`Order placed successfully! Order ID: ${firestoreOrderId}`);
+            alert(`Order placed successfully! Order ID: ${docRef.id}`);
         } catch (err) {
             console.error('Error placing order:', err);
             alert(`Failed to place order: ${err.message}`);
@@ -224,21 +205,20 @@ const RestaurantPage = () => {
             </div>
         );
     }
-    // Filter out the profile picture from the photos array to avoid showing it with the rest of the photos
-    const galleryPhotos = restaurant.photos
+
+    const galleryPhotos = restaurant?.photos
         ? restaurant.photos.filter((photo) => photo !== restaurant.profilePicture)
         : [];
 
     const contactFields = [
         restaurant?.phoneNumber && { label: 'Phone', value: restaurant.phoneNumber, href: `tel:${restaurant.phoneNumber}` },
         restaurant?.address && { label: 'Address', value: restaurant.address },
-        restaurant?.email && { label: 'Email', value: restaurant.email, href: `mailto:${restaurant.email}` }
+        restaurant?.email && { label: 'Email', value: restaurant.email, href: `mailto:${restaurant.email}` },
     ].filter(Boolean);
 
     return (
         <div className="restaurant-page">
             <Link to="/" className="back-button">Back to explore</Link>
-
             <div className="restaurant-hero">
                 <div className="hero-image-container">
                     <img
@@ -267,7 +247,6 @@ const RestaurantPage = () => {
                     </div>
                 </div>
             </div>
-
             <div className="restaurant-content">
                 <div className="menu-section">
                     <h2>Menu</h2>
@@ -298,7 +277,6 @@ const RestaurantPage = () => {
                         <p>No menu categories were added! Please contact the restaurant for menu details!</p>
                     )}
                 </div>
-
                 <div className="cart-section">
                     <h2>Cart</h2>
                     {cart.length > 0 ? (
@@ -363,7 +341,7 @@ const RestaurantPage = () => {
                                         {order.items.some(item => item.specialRequests) && (
                                             <p><strong>Special Requests:</strong> {order.items.filter(item => item.specialRequests).map(item => `${item.itemName}: ${item.specialRequests}`).join('; ')}</p>
                                         )}
-                                        <p><strong>Date:</strong> {order.timestamp?.toDate ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A'}</p>
+                                        <p><strong>Date:</strong> {order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A'}</p>
                                     </div>
                                 ))
                             ) : (
@@ -372,7 +350,6 @@ const RestaurantPage = () => {
                         </div>
                     )}
                 </div>
-
                 <div className="photos-section">
                     <h2>Photos</h2>
                     {galleryPhotos.length > 0 ? (

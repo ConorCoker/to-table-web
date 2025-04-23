@@ -1,22 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { getFirestore, collection, getDocs, addDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import './CategoryForm.css';
 
 const CategoryForm = ({ restaurantId }) => {
     const [categoryName, setCategoryName] = useState('');
     const [categories, setCategories] = useState([]);
     const [message, setMessage] = useState('');
-
-    const apiUrl = process.env.REACT_APP_API_URL;
+    const [loading, setLoading] = useState(false);
 
     // Fetch existing categories on mount
     useEffect(() => {
         const fetchCategories = async () => {
+            if (!restaurantId) return;
+
             try {
-                const response = await axios.get(`${apiUrl}/api/${restaurantId}/categories`);
-                setCategories(response.data);
+                setLoading(true);
+                const categoriesRef = collection(db, `restaurants/${restaurantId}/categories`);
+                const snapshot = await getDocs(categoriesRef);
+                const categoriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setCategories(categoriesData || []);
             } catch (error) {
-                setMessage('Error fetching categories');
+                setMessage('Error fetching categories: ' + error.message);
+                console.error('Fetch categories error:', error);
+            } finally {
+                setLoading(false);
             }
         };
         fetchCategories();
@@ -24,17 +32,30 @@ const CategoryForm = ({ restaurantId }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!categoryName.trim()) {
+            setMessage('Category name is required');
+            return;
+        }
+
         try {
-            const response = await axios.post(`${apiUrl}/api/${restaurantId}/categories`, {
+            setLoading(true);
+            const categoriesRef = collection(db, `restaurants/${restaurantId}/categories`);
+            const newCategory = {
                 name: categoryName,
-            });
-            setMessage(response.data.message);
+                timestamp: new Date(),
+            };
+            await addDoc(categoriesRef, newCategory);
+            setMessage('Category added successfully!');
             setCategoryName('');
             // Refresh categories
-            const updatedCategories = await axios.get(`${apiUrl}/api/${restaurantId}/categories`);
-            setCategories(updatedCategories.data);
+            const snapshot = await getDocs(categoriesRef);
+            const categoriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setCategories(categoriesData || []);
         } catch (error) {
-            setMessage(error.response?.data?.message || 'Error adding category');
+            setMessage('Error adding category: ' + error.message);
+            console.error('Create category error:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -49,13 +70,18 @@ const CategoryForm = ({ restaurantId }) => {
                         value={categoryName}
                         onChange={(e) => setCategoryName(e.target.value)}
                         required
+                        disabled={loading}
                     />
                 </div>
-                <button type="submit">Add Category</button>
+                <button type="submit" disabled={loading}>
+                    {loading ? 'Adding...' : 'Add Category'}
+                </button>
             </form>
             {message && <p>{message}</p>}
             <h3>Existing Categories</h3>
-            {categories.length > 0 ? (
+            {loading ? (
+                <p>Loading categories...</p>
+            ) : categories.length > 0 ? (
                 <ul>
                     {categories.map((category) => (
                         <li key={category.id}>{category.name}</li>

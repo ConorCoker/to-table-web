@@ -1,28 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { getFirestore, collection, getDocs, addDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import './RoleForm.css';
 
 const RoleForm = ({ restaurantId }) => {
     const [roleName, setRoleName] = useState('');
     const [message, setMessage] = useState('');
     const [roles, setRoles] = useState([]);
-
-    const apiUrl = process.env.REACT_APP_API_URL;
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const fetchRoles = async () => {
+            if (!restaurantId) return;
+
             try {
-                const response = await axios.get(`${apiUrl}/api/${restaurantId}/roles`);
-                setRoles(response.data || []);
+                setLoading(true);
+                const rolesRef = collection(db, `restaurants/${restaurantId}/roles`);
+                const snapshot = await getDocs(rolesRef);
+                const rolesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setRoles(rolesData || []);
             } catch (error) {
-                setMessage('Error fetching roles: ' + (error.response?.data?.message || error.message));
+                setMessage('Error fetching roles: ' + error.message);
                 console.error('Fetch roles error:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
-        if (restaurantId) {
-            fetchRoles();
-        }
+        fetchRoles();
     }, [restaurantId]);
 
     const handleSubmit = async (e) => {
@@ -33,14 +38,24 @@ const RoleForm = ({ restaurantId }) => {
         }
 
         try {
-            const response = await axios.post(`${apiUrl}/api/${restaurantId}/roles`, { name: roleName });
-            setMessage(response.data.message);
+            setLoading(true);
+            const rolesRef = collection(db, `restaurants/${restaurantId}/roles`);
+            const newRole = {
+                name: roleName,
+                timestamp: new Date(),
+            };
+            const docRef = await addDoc(rolesRef, newRole);
+            setMessage('Role created successfully!');
             setRoleName('');
-            const updatedRoles = await axios.get(`${apiUrl}/api/${restaurantId}/roles`);
-            setRoles(updatedRoles.data || []);
+            // Refresh roles
+            const snapshot = await getDocs(rolesRef);
+            const rolesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setRoles(rolesData || []);
         } catch (error) {
-            setMessage(error.response?.data?.message || 'Error creating role');
+            setMessage('Error creating role: ' + error.message);
             console.error('Create role error:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -56,14 +71,19 @@ const RoleForm = ({ restaurantId }) => {
                         onChange={(e) => setRoleName(e.target.value)}
                         placeholder="e.g., Kitchen"
                         required
+                        disabled={loading}
                     />
                 </div>
-                <button type="submit">Create Role</button>
+                <button type="submit" disabled={loading}>
+                    {loading ? 'Creating...' : 'Create Role'}
+                </button>
             </form>
             {message && <p>{message}</p>}
             <div className="existing-roles">
                 <h3>Existing Roles</h3>
-                {roles.length === 0 ? (
+                {loading ? (
+                    <p>Loading roles...</p>
+                ) : roles.length === 0 ? (
                     <p>No roles found. Add a role above.</p>
                 ) : (
                     <ul>

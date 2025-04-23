@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 import { Link } from 'react-router-dom';
 import { countries } from 'countries-list';
 import citiesData from 'cities.json/cities.json';
@@ -13,17 +14,20 @@ const BrowseRestaurants = () => {
     const [selectedCountry, setSelectedCountry] = useState('');
     const [locations, setLocations] = useState([]);
     const [selectedLocation, setSelectedLocation] = useState('');
-
-    const apiUrl = process.env.REACT_APP_API_URL;
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchRestaurants = async () => {
             try {
-                const response = await axios.get(`${apiUrl}/api/restaurants`);
-                setRestaurants(response.data);
-                setFilteredRestaurants(response.data);
+                setLoading(true);
+                const snapshot = await getDocs(collection(db, 'restaurants'));
+                const restaurantsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setRestaurants(restaurantsData);
+                setFilteredRestaurants(restaurantsData);
             } catch (err) {
-                setError('Error fetching restaurants');
+                setError('Error fetching restaurants: ' + err.message);
+            } finally {
+                setLoading(false);
             }
         };
         fetchRestaurants();
@@ -57,6 +61,8 @@ const BrowseRestaurants = () => {
 
         if (uniqueLocations.length === 0) {
             setError(`No locations found for ${selectedCountry}.`);
+        } else {
+            setError('');
         }
     }, [selectedCountry, countriesList, restaurants]);
 
@@ -85,6 +91,14 @@ const BrowseRestaurants = () => {
 
         setFilteredRestaurants(filtered);
     }, [selectedCountry, selectedLocation, restaurants]);
+
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <p>Loading restaurants...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="browse-restaurants">
@@ -133,8 +147,20 @@ const BrowseRestaurants = () => {
                     {filteredRestaurants.map((restaurant) => (
                         <div key={restaurant.id} className="restaurant-card">
                             <Link to={`/restaurants/${restaurant.id}`}>
+                                <img
+                                    src={
+                                        restaurant.profilePicture ||
+                                        'https://firebasestorage.googleapis.com/v0/b/tootable-6beb7.firebasestorage.app/o/assets%2Fdefault_rest_image.png?alt=media&token=ff81d826-4dbe-4f5b-8c22-b036acb66093'
+                                    }
+                                    alt={restaurant.name}
+                                    className="restaurant-image"
+                                    onError={(e) =>
+                                        (e.target.src =
+                                            'https://firebasestorage.googleapis.com/v0/b/tootable-6beb7.firebasestorage.app/o/assets%2Fdefault_rest_image.png?alt=media&token=ff81d826-4dbe-4f5b-8c22-b036acb66093')
+                                    }
+                                />
                                 <h3>{restaurant.name}</h3>
-                                <p>{restaurant.email}</p>
+                                <p>{restaurant.email || 'Email not specified'}</p>
                                 <p className="location">{restaurant.location || 'Location not specified'}</p>
                             </Link>
                         </div>
