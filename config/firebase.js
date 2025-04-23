@@ -2,6 +2,9 @@ const firebaseAdmin = require('firebase-admin');
 require('dotenv').config();
 
 if (!firebaseAdmin.apps.length) {
+    console.log('Project ID:', process.env.FIREBASE_PROJECT_ID);
+    console.log('Client Email:', process.env.FIREBASE_CLIENT_EMAIL);
+    console.log('Private Key First Line:', process.env.FIREBASE_PRIVATE_KEY.split('\n')[0]);
     const serviceAccount = {
         projectId: process.env.FIREBASE_PROJECT_ID,
         privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
