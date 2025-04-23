@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Link } from 'react-router-dom';
 import { countries } from 'countries-list';
@@ -15,6 +15,9 @@ const BrowseRestaurants = () => {
     const [locations, setLocations] = useState([]);
     const [selectedLocation, setSelectedLocation] = useState('');
     const [loading, setLoading] = useState(true);
+    const [imageLoading, setImageLoading] = useState({});
+
+    const defaultImage = 'https://firebasestorage.googleapis.com/v0/b/tootable-6beb7.firebasestorage.app/o/assets%2Fdefault_rest_image.png?alt=media&token=ff81d826-4dbe-4f5b-8c22-b036acb66093';
 
     useEffect(() => {
         const fetchRestaurants = async () => {
@@ -24,6 +27,11 @@ const BrowseRestaurants = () => {
                 const restaurantsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setRestaurants(restaurantsData);
                 setFilteredRestaurants(restaurantsData);
+                const initialImageLoading = {};
+                restaurantsData.forEach(restaurant => {
+                    initialImageLoading[restaurant.id] = true;
+                });
+                setImageLoading(initialImageLoading);
             } catch (err) {
                 setError('Error fetching restaurants: ' + err.message);
             } finally {
@@ -36,7 +44,7 @@ const BrowseRestaurants = () => {
     useEffect(() => {
         const countryArray = Object.entries(countries).map(([code, country]) => ({
             name: country.name,
-            code: code.toLowerCase()
+            code: code.toLowerCase(),
         }));
         setCountriesList(countryArray.sort((a, b) => a.name.localeCompare(b.name)));
     }, []);
@@ -58,12 +66,6 @@ const BrowseRestaurants = () => {
 
         const uniqueLocations = [...new Set(countryLocations.filter(loc => loc))].sort();
         setLocations(uniqueLocations);
-
-        if (uniqueLocations.length === 0) {
-            setError(`No locations found for ${selectedCountry}.`);
-        } else {
-            setError('');
-        }
     }, [selectedCountry, countriesList, restaurants]);
 
     useEffect(() => {
@@ -91,6 +93,10 @@ const BrowseRestaurants = () => {
 
         setFilteredRestaurants(filtered);
     }, [selectedCountry, selectedLocation, restaurants]);
+
+    const handleImageLoad = (restaurantId) => {
+        setImageLoading(prev => ({ ...prev, [restaurantId]: false }));
+    };
 
     if (loading) {
         return (
@@ -147,21 +153,21 @@ const BrowseRestaurants = () => {
                     {filteredRestaurants.map((restaurant) => (
                         <div key={restaurant.id} className="restaurant-card">
                             <Link to={`/restaurants/${restaurant.id}`}>
+                                {imageLoading[restaurant.id] && (
+                                    <div className="image-skeleton"></div>
+                                )}
                                 <img
-                                    src={
-                                        restaurant.profilePicture ||
-                                        'https://firebasestorage.googleapis.com/v0/b/tootable-6beb7.firebasestorage.app/o/assets%2Fdefault_rest_image.png?alt=media&token=ff81d826-4dbe-4f5b-8c22-b036acb66093'
-                                    }
+                                    src={restaurant.profilePicture || defaultImage}
                                     alt={restaurant.name}
-                                    className="restaurant-image"
-                                    onError={(e) =>
-                                        (e.target.src =
-                                            'https://firebasestorage.googleapis.com/v0/b/tootable-6beb7.firebasestorage.app/o/assets%2Fdefault_rest_image.png?alt=media&token=ff81d826-4dbe-4f5b-8c22-b036acb66093')
-                                    }
+                                    className={`restaurant-image ${imageLoading[restaurant.id] ? 'hidden' : ''}`}
+                                    onLoad={() => handleImageLoad(restaurant.id)}
+                                    onError={(e) => {
+                                        e.target.src = defaultImage;
+                                        handleImageLoad(restaurant.id);
+                                    }}
                                 />
                                 <h3>{restaurant.name}</h3>
-                                <p>{restaurant.email || 'Email not specified'}</p>
-                                <p className="location">{restaurant.location || 'Location not specified'}</p>
+                                <p className="location">{restaurant.location}</p>
                             </Link>
                         </div>
                     ))}
