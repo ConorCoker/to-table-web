@@ -7,7 +7,7 @@ if (!firebaseAdmin.apps.length) {
     console.log('Private Key:', process.env.FIREBASE_PRIVATE_KEY);
     const serviceAccount = {
         projectId: process.env.FIREBASE_PROJECT_ID,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY, //no longer replace
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
     };
 
