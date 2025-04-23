@@ -5,7 +5,7 @@ import { db } from '../firebase';
 import './RestaurantPage.css';
 
 const defaultRestaurantPfp = 'https://firebasestorage.googleapis.com/v0/b/tootable-6beb7.firebasestorage.app/o/assets%2Fdefault_rest_image.png?alt=media&token=ff81d826-4dbe-4f5b-8c22-b036acb66093';
-
+const apiUrl = process.env.REACT_APP_API_URL;
 const RestaurantPage = () => {
     const { restaurantId } = useParams();
     const [restaurant, setRestaurant] = useState(null);
@@ -78,7 +78,7 @@ const RestaurantPage = () => {
                     );
                     setCategories(filteredCategories);
                     try {
-                        const response = await fetch(`http://localhost:3000/api/${restaurantId}/orders`);
+                        const response = await fetch(`${apiUrl}/api/${restaurantId}/orders`);
                         if (response.ok) {
                             const orders = await response.json();
                             setPastOrders(orders);
@@ -165,7 +165,7 @@ const RestaurantPage = () => {
                 total: getCartTotal()
             };
 
-            const response = await fetch(`http://localhost:3000/api/${restaurantId}/orders`, {
+            const response = await fetch(`${apiUrl}/api/${restaurantId}/orders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(order)
@@ -185,7 +185,7 @@ const RestaurantPage = () => {
 
             setCart([]);
             try {
-                const ordersResponse = await fetch(`http://localhost:3000/api/${restaurantId}/orders`);
+                const ordersResponse = await fetch(`${apiUrl}/api/${restaurantId}/orders`);
                 if (ordersResponse.ok) {
                     const orders = await ordersResponse.json();
                     setPastOrders(orders);
