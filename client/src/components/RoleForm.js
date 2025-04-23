@@ -7,10 +7,12 @@ const RoleForm = ({ restaurantId }) => {
     const [message, setMessage] = useState('');
     const [roles, setRoles] = useState([]);
 
+    const apiUrl = process.env.REACT_APP_API_URL;
+
     useEffect(() => {
         const fetchRoles = async () => {
             try {
-                const response = await axios.get(`/api/${restaurantId}/roles`);
+                const response = await axios.get(`${apiUrl}/api/${restaurantId}/roles`);
                 setRoles(response.data || []);
             } catch (error) {
                 setMessage('Error fetching roles: ' + (error.response?.data?.message || error.message));
@@ -31,10 +33,10 @@ const RoleForm = ({ restaurantId }) => {
         }
 
         try {
-            const response = await axios.post(`/api/${restaurantId}/roles`, { name: roleName });
+            const response = await axios.post(`${apiUrl}/api/${restaurantId}/roles`, { name: roleName });
             setMessage(response.data.message);
             setRoleName('');
-            const updatedRoles = await axios.get(`/api/${restaurantId}/roles`);
+            const updatedRoles = await axios.get(`${apiUrl}/api/${restaurantId}/roles`);
             setRoles(updatedRoles.data || []);
         } catch (error) {
             setMessage(error.response?.data?.message || 'Error creating role');

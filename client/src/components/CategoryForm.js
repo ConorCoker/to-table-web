@@ -7,11 +7,13 @@ const CategoryForm = ({ restaurantId }) => {
     const [categories, setCategories] = useState([]);
     const [message, setMessage] = useState('');
 
+    const apiUrl = process.env.REACT_APP_API_URL;
+
     // Fetch existing categories on mount
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await axios.get(`/api/${restaurantId}/categories`);
+                const response = await axios.get(`${apiUrl}/api/${restaurantId}/categories`);
                 setCategories(response.data);
             } catch (error) {
                 setMessage('Error fetching categories');
@@ -23,13 +25,13 @@ const CategoryForm = ({ restaurantId }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post(`/api/${restaurantId}/categories`, {
+            const response = await axios.post(`${apiUrl}/api/${restaurantId}/categories`, {
                 name: categoryName,
             });
             setMessage(response.data.message);
             setCategoryName('');
             // Refresh categories
-            const updatedCategories = await axios.get(`/api/${restaurantId}/categories`);
+            const updatedCategories = await axios.get(`${apiUrl}/api/${restaurantId}/categories`);
             setCategories(updatedCategories.data);
         } catch (error) {
             setMessage(error.response?.data?.message || 'Error adding category');

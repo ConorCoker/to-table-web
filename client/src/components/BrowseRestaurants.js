@@ -14,10 +14,12 @@ const BrowseRestaurants = () => {
     const [locations, setLocations] = useState([]);
     const [selectedLocation, setSelectedLocation] = useState('');
 
+    const apiUrl = process.env.REACT_APP_API_URL;
+
     useEffect(() => {
         const fetchRestaurants = async () => {
             try {
-                const response = await axios.get('/api/restaurants');
+                const response = await axios.get(`${apiUrl}/api/restaurants`);
                 setRestaurants(response.data);
                 setFilteredRestaurants(response.data);
             } catch (err) {

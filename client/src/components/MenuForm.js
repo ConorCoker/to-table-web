@@ -13,11 +13,13 @@ const MenuForm = ({ restaurantId }) => {
     const [roles, setRoles] = useState([]);
     const [message, setMessage] = useState('');
 
+    const apiUrl = process.env.REACT_APP_API_URL;
+
     // Fetch categories on mount
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await axios.get(`/api/${restaurantId}/categories`);
+                const response = await axios.get(`${apiUrl}/api/${restaurantId}/categories`);
                 setCategories(response.data || []);
             } catch (error) {
                 setMessage('Error fetching categories: ' + (error.response?.data?.message || error.message));
@@ -27,7 +29,7 @@ const MenuForm = ({ restaurantId }) => {
 
         const fetchRoles = async () => {
             try {
-                const response = await axios.get(`/api/${restaurantId}/roles`);
+                const response = await axios.get(`${apiUrl}/api/${restaurantId}/roles`);
                 setRoles(response.data || []);
             } catch (error) {
                 setMessage('Error fetching roles: ' + (error.response?.data?.message || error.message));
@@ -47,7 +49,7 @@ const MenuForm = ({ restaurantId }) => {
         }
 
         try {
-            const response = await axios.post(`/api/${restaurantId}/menu`, {
+            const response = await axios.post(`${apiUrl}/api/${restaurantId}/menu`, {
                 name: itemName,
                 description,
                 price: parseFloat(price),
