@@ -8,8 +8,10 @@ const restaurantsRouter = require('./routes/restaurants');
 const rolesRouter = require('./routes/roles');
 const app = express();
 
+const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:3001';
+
 app.use(cors({
-    origin: 'http://localhost:3001',
+    origin: allowedOrigin,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type'],
 }));
