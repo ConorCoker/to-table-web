@@ -20,6 +20,7 @@ const RestaurantPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [sortBy, setSortBy] = useState('date');
+    const [tableNumber, setTableNumber] = useState('');
 
     useEffect(() => {
         const savedCart = localStorage.getItem(`cart_${restaurantId}`);
@@ -169,6 +170,11 @@ const RestaurantPage = () => {
             return;
         }
 
+        if (!tableNumber) {
+            alert('Please enter a table number');
+            return;
+        }
+
         try {
             const order = {
                 orderId: `ORDER_${restaurantId}_${Date.now()}`,
@@ -182,6 +188,7 @@ const RestaurantPage = () => {
                 total: getCartTotal(),
                 status: 'pending',
                 timestamp: new Date(),
+                tableNumber: tableNumber
             };
 
             const ordersRef = collection(db, `restaurants/${restaurantId}/orders`);
@@ -213,6 +220,7 @@ const RestaurantPage = () => {
                         itemName: itemsSummary,
                         cartItemsCount,
                         cartTotal,
+                        tableNumber
                     });
                     console.log(`Successfully sent order notification to Android for role: ${roleId}`);
                 } catch (error) {
@@ -221,6 +229,7 @@ const RestaurantPage = () => {
             }
 
             setCart([]);
+            setTableNumber('');
             alert(`Order placed successfully! Order ID: ${docRef.id}`);
         } catch (err) {
             console.error('Error placing order:', err);
@@ -379,6 +388,13 @@ const RestaurantPage = () => {
                     <h2>Cart</h2>
                     {cart.length > 0 ? (
                         <div className="cart-items">
+                            <input
+                                type="text"
+                                className="table-number-input"
+                                placeholder="Enter table number"
+                                value={tableNumber}
+                                onChange={(e) => setTableNumber(e.target.value)}
+                            />
                             {cart.map((item) => (
                                 <div key={item.id} className="cart-item">
                                     <span className="cart-item-name">{item.name}</span>
@@ -458,6 +474,7 @@ const RestaurantPage = () => {
                           {getStatusIcon(order.status)} {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                         </span>
                                             </div>
+                                            <p><strong>Table:</strong> {order.tableNumber || 'N/A'}</p>
                                             <p><strong>Total:</strong> ${order.total.toFixed(2)}</p>
                                             <p><strong>Items:</strong> {order.items.map(item => `${item.quantity}x ${item.itemName}`).join(', ')}</p>
                                             {order.items.some(item => item.specialRequests) && (
@@ -471,7 +488,6 @@ const RestaurantPage = () => {
                                     <p>No current orders</p>
                                 )}
                             </div>
-
                             <div className="past-orders">
                                 <div className="orders-header">
                                     <h3>Past Orders</h3>
@@ -485,6 +501,7 @@ const RestaurantPage = () => {
                           {getStatusIcon(order.status)} {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                         </span>
                                             </div>
+                                            <p><strong>Table:</strong> {order.tableNumber || 'N/A'}</p>
                                             <p><strong>Total:</strong> ${order.total.toFixed(2)}</p>
                                             <p><strong>Items:</strong> {order.items.map(item => `${item.quantity}x ${item.itemName}`).join(', ')}</p>
                                             {order.items.some(item => item.specialRequests) && (

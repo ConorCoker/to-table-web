@@ -492,4 +492,13 @@
     .order-id {
         max-width: 150px;
     }
+
+    .table-number-input {
+        width: 100%;
+        padding: 8px;
+        margin: 10px 0;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
 }
