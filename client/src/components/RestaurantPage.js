@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc, collection, getDocs, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, addDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import './RestaurantPage.css';
-import {getFunctions} from "firebase/functions";
-import { httpsCallable } from "firebase/functions";
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { FaClock, FaUtensils, FaCheckCircle, FaSyncAlt } from 'react-icons/fa';
 
 const defaultRestaurantPfp = 'https://firebasestorage.googleapis.com/v0/b/tootable-6beb7.firebasestorage.app/o/assets%2Fdefault_rest_image.png?alt=media&token=ff81d826-4dbe-4f5b-8c22-b036acb66093';
 
@@ -14,10 +14,12 @@ const RestaurantPage = () => {
     const [categories, setCategories] = useState([]);
     const [menuItems, setMenuItems] = useState({});
     const [cart, setCart] = useState([]);
+    const [currentOrders, setCurrentOrders] = useState([]);
     const [pastOrders, setPastOrders] = useState([]);
-    const [showPastOrders, setShowPastOrders] = useState(false);
+    const [showOrders, setShowOrders] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [sortBy, setSortBy] = useState('date');
 
     useEffect(() => {
         const savedCart = localStorage.getItem(`cart_${restaurantId}`);
@@ -79,18 +81,6 @@ const RestaurantPage = () => {
                         itemsByCategory[category.id]?.length > 0
                     );
                     setCategories(filteredCategories);
-                    try {
-                        const ordersRef = collection(db, `restaurants/${restaurantId}/orders`);
-                        const ordersSnap = await getDocs(ordersRef);
-                        const ordersData = ordersSnap.docs.map(doc => ({
-                            id: doc.id,
-                            ...doc.data(),
-                        }));
-                        setPastOrders(ordersData);
-                    } catch (orderError) {
-                        console.warn('Error fetching past orders:', orderError);
-                        setPastOrders([]);
-                    }
                 } else {
                     setError('Restaurant not found');
                 }
@@ -100,8 +90,36 @@ const RestaurantPage = () => {
                 setLoading(false);
             }
         };
+
+        const ordersRef = collection(db, `restaurants/${restaurantId}/orders`);
+        const unsubscribe = onSnapshot(ordersRef, (snapshot) => {
+            const ordersData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                updatedAt: doc.data().timestamp ? new Date(doc.data().timestamp.toDate()) : new Date(),
+            }));
+            const sortedOrders = sortOrders(ordersData, sortBy);
+            setCurrentOrders(sortedOrders.filter(order => order.status === 'pending' || order.status === 'in-progress'));
+            setPastOrders(sortedOrders.filter(order => order.status === 'complete'));
+        }, (err) => {
+            console.warn('Error fetching orders:', err);
+            setCurrentOrders([]);
+            setPastOrders([]);
+        });
+
         fetchRestaurantAndCategories();
-    }, [restaurantId]);
+        return () => unsubscribe();
+    }, [restaurantId, sortBy]);
+
+    const sortOrders = (orders, criteria) => {
+        return [...orders].sort((a, b) => {
+            if (criteria === 'status') {
+                const statusOrder = { 'pending': 1, 'in-progress': 2, 'complete': 3 };
+                return statusOrder[a.status] - statusOrder[b.status];
+            }
+            return b.updatedAt - a.updatedAt;
+        });
+    };
 
     const handleAddToOrder = async (item) => {
         setCart(prevCart => {
@@ -159,7 +177,7 @@ const RestaurantPage = () => {
                     price: item.price,
                     quantity: item.quantity,
                     specialRequests: item.specialRequests || '',
-                    roleId: item.role
+                    roleId: item.role,
                 })),
                 total: getCartTotal(),
                 status: 'pending',
@@ -173,15 +191,7 @@ const RestaurantPage = () => {
             pastOrderIds.push(docRef.id);
             localStorage.setItem(`orderIds_${restaurantId}`, JSON.stringify(pastOrderIds));
 
-            const ordersSnap = await getDocs(ordersRef);
-            const ordersData = ordersSnap.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            setPastOrders(ordersData);
-
             const rolesMap = {};
-
             cart.forEach(item => {
                 if (!item.role) return;
                 if (!rolesMap[item.role]) rolesMap[item.role] = [];
@@ -216,6 +226,61 @@ const RestaurantPage = () => {
             console.error('Error placing order:', err);
             alert(`Failed to place order: ${err.message}`);
         }
+    };
+
+    const handleSortChange = (criteria) => {
+        setSortBy(criteria);
+    };
+
+    const handleRefreshOrders = async () => {
+        try {
+            const ordersRef = collection(db, `restaurants/${restaurantId}/orders`);
+            const ordersSnap = await getDocs(ordersRef);
+            const ordersData = ordersSnap.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                updatedAt: doc.data().timestamp ? new Date(doc.data().timestamp.toDate()) : new Date(),
+            }));
+            const sortedOrders = sortOrders(ordersData, sortBy);
+            setCurrentOrders(sortedOrders.filter(order => order.status === 'pending' || order.status === 'in-progress'));
+            setPastOrders(sortedOrders.filter(order => order.status === 'complete'));
+        } catch (err) {
+            console.warn('Error refreshing orders:', err);
+        }
+    };
+
+    const getStatusClass = (status) => {
+        switch (status) {
+            case 'pending': return 'status-pending';
+            case 'in-progress': return 'status-in-progress';
+            case 'complete': return 'status-complete';
+            default: return '';
+        }
+    };
+
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case 'pending': return <FaClock />;
+            case 'in-progress': return <FaUtensils />;
+            case 'complete': return <FaCheckCircle />;
+            default: return null;
+        }
+    };
+
+    const formatTimeAgo = (date) => {
+        const now = new Date();
+        const diff = (now - date) / 1000;
+        if (diff < 60) return `${Math.round(diff)} seconds ago`;
+        if (diff < 3600) return `${Math.round(diff / 60)} minutes ago`;
+        if (diff < 86400) return `${Math.round(diff / 3600)} hours ago`;
+        return date.toLocaleString();
+    };
+
+    const truncateOrderId = (orderId) => {
+        if (orderId.length > 25) {
+            return `${orderId.slice(0, 22)}...`;
+        }
+        return orderId;
     };
 
     if (loading) {
@@ -357,29 +422,82 @@ const RestaurantPage = () => {
                     )}
                     <button
                         className="view-orders-button"
-                        onClick={() => setShowPastOrders(!showPastOrders)}
+                        onClick={() => setShowOrders(!showOrders)}
                     >
-                        {showPastOrders ? 'Hide Past Orders' : 'View Past Orders'}
+                        {showOrders ? 'Hide Orders' : 'View Orders'}
                     </button>
-                    {showPastOrders && (
-                        <div className="past-orders">
-                            <h3>Past Orders</h3>
-                            {pastOrders.length > 0 ? (
-                                pastOrders.map((order) => (
-                                    <div key={order.id} className="past-order">
-                                        <p><strong>Order ID:</strong> {order.orderId}</p>
-                                        <p><strong>Status:</strong> {order.status}</p>
-                                        <p><strong>Total:</strong> ${order.total.toFixed(2)}</p>
-                                        <p><strong>Items:</strong> {order.items.map(item => `${item.quantity}x ${item.itemName}`).join(', ')}</p>
-                                        {order.items.some(item => item.specialRequests) && (
-                                            <p><strong>Special Requests:</strong> {order.items.filter(item => item.specialRequests).map(item => `${item.itemName}: ${item.specialRequests}`).join('; ')}</p>
-                                        )}
-                                        <p><strong>Date:</strong> {order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A'}</p>
+                    {showOrders && (
+                        <div className="orders-section">
+                            <div className="current-orders">
+                                <div className="orders-header">
+                                    <h3>Current Orders</h3>
+                                    <div className="sort-controls">
+                                        <label>Sort by: </label>
+                                        <select
+                                            value={sortBy}
+                                            onChange={(e) => handleSortChange(e.target.value)}
+                                        >
+                                            <option value="date">Date (Newest First)</option>
+                                            <option value="status">Status</option>
+                                        </select>
+                                        <button
+                                            className="refresh-button"
+                                            onClick={handleRefreshOrders}
+                                            title="Refresh Orders"
+                                        >
+                                            <FaSyncAlt />
+                                        </button>
                                     </div>
-                                ))
-                            ) : (
-                                <p>No past orders found</p>
-                            )}
+                                </div>
+                                {currentOrders.length > 0 ? (
+                                    currentOrders.map((order) => (
+                                        <div key={order.id} className={`order-card ${getStatusClass(order.status)}`}>
+                                            <div className="order-header">
+                                                <h4>Order ID: <span className="order-id">{truncateOrderId(order.orderId)}</span></h4>
+                                                <span className="status-badge">
+                          {getStatusIcon(order.status)} {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                        </span>
+                                            </div>
+                                            <p><strong>Total:</strong> ${order.total.toFixed(2)}</p>
+                                            <p><strong>Items:</strong> {order.items.map(item => `${item.quantity}x ${item.itemName}`).join(', ')}</p>
+                                            {order.items.some(item => item.specialRequests) && (
+                                                <p><strong>Special Requests:</strong> {order.items.filter(item => item.specialRequests).map(item => `${item.itemName}: ${item.specialRequests}`).join('; ')}</p>
+                                            )}
+                                            <p><strong>Placed:</strong> {order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A'}</p>
+                                            <p><strong>Updated:</strong> {formatTimeAgo(order.updatedAt)}</p>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p>No current orders</p>
+                                )}
+                            </div>
+
+                            <div className="past-orders">
+                                <div className="orders-header">
+                                    <h3>Past Orders</h3>
+                                </div>
+                                {pastOrders.length > 0 ? (
+                                    pastOrders.map((order) => (
+                                        <div key={order.id} className={`order-card ${getStatusClass(order.status)}`}>
+                                            <div className="order-header">
+                                                <h4>Order ID: <span className="order-id">{truncateOrderId(order.orderId)}</span></h4>
+                                                <span className="status-badge">
+                          {getStatusIcon(order.status)} {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                        </span>
+                                            </div>
+                                            <p><strong>Total:</strong> ${order.total.toFixed(2)}</p>
+                                            <p><strong>Items:</strong> {order.items.map(item => `${item.quantity}x ${item.itemName}`).join(', ')}</p>
+                                            {order.items.some(item => item.specialRequests) && (
+                                                <p><strong>Special Requests:</strong> {order.items.filter(item => item.specialRequests).map(item => `${item.itemName}: ${item.specialRequests}`).join('; ')}</p>
+                                            )}
+                                            <p><strong>Placed:</strong> {order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A'}</p>
+                                            <p><strong>Updated:</strong> {formatTimeAgo(order.updatedAt)}</p>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p>No past orders found</p>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
